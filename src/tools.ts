@@ -34,65 +34,33 @@ const zodToInputSchema = (schema: z.ZodType<any>): InputSchema => {
   return zodToJsonSchema(schema) as InputSchema;
 };
 
-// Define the available tools
+export const retrieveRelevantThoughtsSchema = z.object({
+  thought_id: z.number().int().positive().describe("The ID of the thought to find related thoughts for")
+});
+
+export const reviseThoughtSchema = captureThoughtSchema.extend({
+  thought_id: z.number().int().positive().describe("The ID of the thought to revise")
+}).partial().required({ thought_id: true });
+
 export const captureThoughtTool: Tool = {
   name: "capture_thought",
-  description: "Stores a new thought in memory and in the thought history.",
+  description: "Stores a new thought in memory and in the thought history and runs a pipeline to classify the thought, return metacognitive feedback, and retrieve relevant thoughts.",
   parameters: captureThoughtSchema,
   inputSchema: zodToInputSchema(captureThoughtSchema)
 };
 
-export const applyReasoningSchema = z.object({
-  thought_id: z.number().int().positive().describe("The ID (thought number) of the thought to analyze"),
-  reasoning_type: z.string().optional().describe("Optional specific reasoning type to apply")
-});
-
-export const applyReasoningTool: Tool = {
-  name: "apply_reasoning",
-  description: "Applies a reasoning strategy to a given thought in memory.",
-  parameters: applyReasoningSchema,
-  inputSchema: zodToInputSchema(applyReasoningSchema)
+export const reviseThoughtTool: Tool = {
+  name: "revise_thought",
+  description: "Revises a thought in memory and in the thought history.",
+  parameters: reviseThoughtSchema,
+  inputSchema: zodToInputSchema(reviseThoughtSchema)
 };
-
-export const evaluateThoughtQualitySchema = z.object({
-  thought_id: z.number().int().positive().describe("The ID (thought number) of the thought to evaluate")
-});
-
-export const evaluateThoughtQualityTool: Tool = {
-  name: "evaluate_thought_quality",
-  description: "Runs a metacognitive quality check on the specified thought.",
-  parameters: evaluateThoughtQualitySchema,
-  inputSchema: zodToInputSchema(evaluateThoughtQualitySchema)
-};
-
-export const retrieveRelevantThoughtsSchema = z.object({
-  thought_id: z.number().int().positive().describe("The ID of the thought to find related thoughts for")
-});
 
 export const retrieveRelevantThoughtsTool: Tool = {
   name: "retrieve_relevant_thoughts",
   description: "Finds thoughts from long-term storage that share tags with the specified thought.",
   parameters: retrieveRelevantThoughtsSchema,
   inputSchema: zodToInputSchema(retrieveRelevantThoughtsSchema)
-};
-
-export const branchThoughtSchema = z.object({
-  parent_thought_id: z.number().int().positive().describe("The ID of the parent thought to branch from"),
-  branch_id: z.string().describe("Identifier for the new branch")
-});
-
-export const branchThoughtTool: Tool = {
-  name: "branch_thought",
-  description: "Creates or handles branching from a parent thought.",
-  parameters: branchThoughtSchema,
-  inputSchema: zodToInputSchema(branchThoughtSchema)
-};
-
-export const composedThinkTool: Tool = {
-  name: "composed_think",
-  description: "Performs the entire thinking pipeline in one operation (capture, reasoning, evaluation, and retrieval).",
-  parameters: captureThoughtSchema,
-  inputSchema: zodToInputSchema(captureThoughtSchema)
 };
 
 export const emptySchema = z.object({});
@@ -114,11 +82,8 @@ export const clearThinkingHistoryTool: Tool = {
 // Export all tools as an array for convenience
 export const toolDefinitions = [
   captureThoughtTool,
-  applyReasoningTool,
-  evaluateThoughtQualityTool,
+  reviseThoughtTool,
   retrieveRelevantThoughtsTool,
-  branchThoughtTool,
-  composedThinkTool,
   getThinkingSummaryTool,
   clearThinkingHistoryTool
 ];

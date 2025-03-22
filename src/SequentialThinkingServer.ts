@@ -273,37 +273,62 @@ export class EnhancedSequentialThinkingServer extends SequentialThinkingServer {
       this.thoughtHistory[idx] = updatedThought;
     }
   }
-  
+
   // 1. Capture a new thought
   captureThought(inputData: any): any {
     try {
       // Validate and create thought data
       const thoughtData = this.validateThoughtData(inputData);
       
+      // Apply reasoning strategy
+      const enhancedThought = this.reasoningEngine.applyReasoningStrategy(thoughtData);
+      
       // Store in memory
-      this.memoryManager.consolidateMemory(thoughtData);
+      this.memoryManager.consolidateMemory(enhancedThought);
+      
+      // Get metacognitive insights
+      const improvements = this.metacognitiveMonitor.suggestImprovements(enhancedThought);
+      
+      // Get related thoughts
+      const relatedThoughts = this.memoryManager.retrieveRelevantThoughts(enhancedThought);
       
       // Store thought in history
-      this.thoughtHistory.push(thoughtData);
+      this.thoughtHistory.push(enhancedThought);
       
       // Handle branching
-      if (thoughtData.branchFromThought && thoughtData.branchId) {
-        if (!this.branches[thoughtData.branchId]) {
-          this.branches[thoughtData.branchId] = [];
+      if (enhancedThought.branchFromThought && enhancedThought.branchId) {
+        if (!this.branches[enhancedThought.branchId]) {
+          this.branches[enhancedThought.branchId] = [];
         }
-        this.branches[thoughtData.branchId].push(thoughtData);
+        this.branches[enhancedThought.branchId].push(enhancedThought);
       }
       
+      // Return in the format expected by tests
       return {
         content: [{
           type: "text",
           text: JSON.stringify({
-            status: "success",
-            thoughtCaptured: {
-              thoughtNumber: thoughtData.thoughtNumber,
-              stage: thoughtData.stage,
-              timestamp: thoughtData.createdAt.toISO(),
-              branch: thoughtData.branchId
+            thoughtAnalysis: {
+              currentThought: {
+                thoughtNumber: enhancedThought.thoughtNumber,
+                totalThoughts: enhancedThought.totalThoughts,
+                nextThoughtNeeded: enhancedThought.nextThoughtNeeded,
+                stage: enhancedThought.stage,
+                score: enhancedThought.score,
+                tags: enhancedThought.tags,
+                timestamp: enhancedThought.createdAt.toISO(),
+                branch: enhancedThought.branchId
+              },
+              analysis: {
+                relatedThoughtsCount: relatedThoughts.length,
+                qualityMetrics: this.metacognitiveMonitor.evaluateThoughtQuality(enhancedThought),
+                suggestedImprovements: improvements
+              },
+              context: {
+                activeBranches: Object.keys(this.branches),
+                thoughtHistoryLength: this.thoughtHistory.length,
+                currentStage: enhancedThought.stage
+              }
             }
           }, null, 2)
         }]
@@ -313,8 +338,69 @@ export class EnhancedSequentialThinkingServer extends SequentialThinkingServer {
       return this.handleError(e);
     }
   }
-  
-  // 2. Apply reasoning to a thought
+
+  // Revise thought
+  reviseThought(input: { 
+    thought_id: number;
+    thought?: string;
+    thought_number?: number;
+    total_thoughts?: number;
+    next_thought_needed?: boolean;
+    stage?: string;
+    is_revision?: boolean;
+    revises_thought?: number;
+    branch_from_thought?: number;
+    branch_id?: string;
+    needs_more_thoughts?: boolean;
+    score?: number;
+    tags?: string[];
+  }): any {
+    try {
+      // Find the thought to revise
+      const thought = this.findThoughtById(input.thought_id);
+      if (!thought) {
+        throw new Error(`Thought with ID ${input.thought_id} not found`);
+      }
+      
+      // Update thought properties with any provided values
+      if (input.thought !== undefined) thought.thought = input.thought;
+      if (input.next_thought_needed !== undefined) thought.nextThoughtNeeded = input.next_thought_needed;
+      if (input.stage !== undefined) thought.stage = thoughtStageFromString(input.stage);
+      if (input.is_revision !== undefined) thought.isRevision = input.is_revision;
+      if (input.revises_thought !== undefined) thought.revisesThought = input.revises_thought;
+      if (input.branch_from_thought !== undefined) thought.branchFromThought = input.branch_from_thought;
+      if (input.branch_id !== undefined) thought.branchId = input.branch_id;
+      if (input.needs_more_thoughts !== undefined) thought.needsMoreThoughts = input.needs_more_thoughts;
+      if (input.score !== undefined) thought.score = input.score;
+      if (input.tags !== undefined) thought.tags = input.tags;
+      
+      // Set revision flag
+      thought.isRevision = true;
+      
+      // Update thought in history
+      this.updateThought(thought);
+      
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            status: "success",
+            revision: {
+              thoughtNumber: thought.thoughtNumber,
+              stage: thought.stage,
+              updated: true,
+              timestamp: DateTime.now().toISO()
+            }
+          }, null, 2)
+        }]
+      };
+      
+    } catch (e) {
+      return this.handleError(e);
+    }
+  }
+
+  // 1. Apply reasoning to a thought
   applyReasoning(input: { thought_id: number; reasoning_type?: string }): any {
     try {
       // Find the thought
@@ -349,7 +435,7 @@ export class EnhancedSequentialThinkingServer extends SequentialThinkingServer {
     }
   }
   
-  // 3. Evaluate thought quality
+  // 2. Evaluate thought quality
   evaluateThoughtQuality(input: { thought_id: number }): any {
     try {
       // Find the thought
@@ -381,7 +467,7 @@ export class EnhancedSequentialThinkingServer extends SequentialThinkingServer {
     }
   }
   
-  // 4. Retrieve relevant thoughts
+  // 3. Retrieve relevant thoughts
   retrieveRelevantThoughts(input: { thought_id: number }): any {
     try {
       // Find the thought
@@ -416,7 +502,7 @@ export class EnhancedSequentialThinkingServer extends SequentialThinkingServer {
     }
   }
   
-  // 5. Branch thought
+  // 4. Branch thought
   branchThought(input: { parent_thought_id: number; branch_id: string }): any {
     try {
       // Find the parent thought
@@ -440,71 +526,6 @@ export class EnhancedSequentialThinkingServer extends SequentialThinkingServer {
               parentThoughtNumber: parentThought.thoughtNumber,
               branchId: input.branch_id,
               isActive: this.activeBranchId === input.branch_id
-            }
-          }, null, 2)
-        }]
-      };
-      
-    } catch (e) {
-      return this.handleError(e);
-    }
-  }
-  
-  // Original processThought renamed to composedThink for backward compatibility and for the composed_think tool
-  composedThink(inputData: any): any {
-    try {
-      // Validate and create thought data
-      const thoughtData = this.validateThoughtData(inputData);
-      
-      // Apply reasoning strategy
-      const enhancedThought = this.reasoningEngine.applyReasoningStrategy(thoughtData);
-      
-      // Store in memory
-      this.memoryManager.consolidateMemory(enhancedThought);
-      
-      // Get metacognitive insights
-      const improvements = this.metacognitiveMonitor.suggestImprovements(enhancedThought);
-      
-      // Get related thoughts
-      const relatedThoughts = this.memoryManager.retrieveRelevantThoughts(enhancedThought);
-      
-      // Store thought in history
-      this.thoughtHistory.push(enhancedThought);
-      
-      // Handle branching
-      if (enhancedThought.branchFromThought && enhancedThought.branchId) {
-        if (!this.branches[enhancedThought.branchId]) {
-          this.branches[enhancedThought.branchId] = [];
-        }
-        this.branches[enhancedThought.branchId].push(enhancedThought);
-      }
-      
-      // Enhanced response format
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify({
-            thoughtAnalysis: {
-              currentThought: {
-                thoughtNumber: enhancedThought.thoughtNumber,
-                totalThoughts: enhancedThought.totalThoughts,
-                nextThoughtNeeded: enhancedThought.nextThoughtNeeded,
-                stage: enhancedThought.stage,
-                score: enhancedThought.score,
-                tags: enhancedThought.tags,
-                timestamp: enhancedThought.createdAt.toISO(),
-                branch: enhancedThought.branchId
-              },
-              analysis: {
-                relatedThoughtsCount: relatedThoughts.length,
-                qualityMetrics: this.metacognitiveMonitor.evaluateThoughtQuality(enhancedThought),
-                suggestedImprovements: improvements
-              },
-              context: {
-                activeBranches: Object.keys(this.branches),
-                thoughtHistoryLength: this.thoughtHistory.length,
-                currentStage: enhancedThought.stage
-              }
             }
           }, null, 2)
         }]

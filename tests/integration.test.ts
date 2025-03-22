@@ -115,7 +115,8 @@ describe('Sequential Thinking Server Integration', () => {
     // Check for our specific tools
     const toolNames = response.tools.map(tool => tool.name);
     debugLog('Available tools:', toolNames);
-    expect(toolNames).toContain('composed_think');
+    expect(toolNames).toContain('capture_thought');
+    expect(toolNames).toContain('revise_thought');
     expect(toolNames).toContain('get_thinking_summary');
     expect(toolNames).toContain('clear_thinking_history');
   });
@@ -138,7 +139,7 @@ describe('Sequential Thinking Server Integration', () => {
     
     // Submit a thought
     const thoughtResult = await client.callTool({
-      name: "composed_think",
+      name: "capture_thought",
       arguments: {
         thought: "This is a test thought for integration testing",
         thought_number: 1,
@@ -183,8 +184,8 @@ describe('Sequential Thinking Server Integration', () => {
     
     // Add first thought
     const thought1Result = await client.callTool({
-      name: "composed_think",
-      parameters: {
+      name: "capture_thought",
+      arguments: {
         thought: "Initial thought",
         thought_number: 1,
         total_thoughts: 3,
@@ -199,8 +200,8 @@ describe('Sequential Thinking Server Integration', () => {
     
     // Add second thought in sequence
     const thought2Result = await client.callTool({
-      name: "composed_think",
-      parameters: {
+      name: "capture_thought",
+      arguments: {
         thought: "Follow-up thought",
         thought_number: 2,
         total_thoughts: 3,
@@ -215,8 +216,8 @@ describe('Sequential Thinking Server Integration', () => {
     
     // Add a branch thought
     const branchResult = await client.callTool({
-      name: "composed_think",
-      parameters: {
+      name: "capture_thought",
+      arguments: {
         thought: "Alternative approach",
         thought_number: 1,
         total_thoughts: 2,
@@ -237,7 +238,7 @@ describe('Sequential Thinking Server Integration', () => {
     // Get summary and check branches
     const summaryResult = await client.callTool({
       name: "get_thinking_summary",
-      parameters: {}
+      arguments: {}
     }) as ToolResponse;
     
     debugLog('Final summary response:', JSON.stringify(summaryResult, null, 2));

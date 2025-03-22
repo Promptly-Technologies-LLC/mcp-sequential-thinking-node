@@ -7,7 +7,7 @@ import {
   ListToolsRequestSchema
 } from "@modelcontextprotocol/sdk/types.js";
 import { EnhancedSequentialThinkingServer } from "./src/SequentialThinkingServer.js";
-import { toolDefinitions, captureThoughtSchema } from "./src/tools.js";
+import { toolDefinitions, captureThoughtSchema, reviseThoughtSchema } from "./src/tools.js";
 
 // Create and configure the MCP server
 function createServer() {
@@ -96,9 +96,9 @@ function createServer() {
         return thinkingServer.captureThought(inputData);
       }
       
-      case "apply_reasoning": {        
+      case "revise_thought": {        
         if (!params.arguments) {
-          console.error("ERROR: params.arguments object is undefined in apply_reasoning request");
+          console.error("ERROR: params.arguments object is undefined in revise_thought request");
           return {
             content: [{
               type: "text",
@@ -111,27 +111,10 @@ function createServer() {
           };
         }
         
-        const { thought_id, reasoning_type } = params.arguments as { thought_id: number; reasoning_type?: string };
-        return thinkingServer.applyReasoning({ thought_id, reasoning_type });
-      }
-      
-      case "evaluate_thought_quality": {        
-        if (!params.arguments) {
-          console.error("ERROR: params.arguments object is undefined in evaluate_thought_quality request");
-          return {
-            content: [{
-              type: "text",
-              text: JSON.stringify({
-                error: "Invalid request: params.arguments object is undefined",
-                status: "failed"
-              })
-            }],
-            isError: true
-          };
-        }
+        // Cast the arguments to match reviseThoughtSchema
+        const reviseParams = params.arguments as z.infer<typeof reviseThoughtSchema>;
         
-        const { thought_id } = params.arguments as { thought_id: number };
-        return thinkingServer.evaluateThoughtQuality({ thought_id });
+        return thinkingServer.reviseThought(reviseParams);
       }
       
       case "retrieve_relevant_thoughts": {        
@@ -151,61 +134,6 @@ function createServer() {
         
         const { thought_id } = params.arguments as { thought_id: number };
         return thinkingServer.retrieveRelevantThoughts({ thought_id });
-      }
-      
-      case "branch_thought": {        
-        if (!params.arguments) {
-          console.error("ERROR: params.arguments object is undefined in branch_thought request");
-          return {
-            content: [{
-              type: "text",
-              text: JSON.stringify({
-                error: "Invalid request: params.arguments object is undefined",
-                status: "failed"
-              })
-            }],
-            isError: true
-          };
-        }
-        
-        const { parent_thought_id, branch_id } = params.arguments as { parent_thought_id: number; branch_id: string };
-        return thinkingServer.branchThought({ parent_thought_id, branch_id });
-      }
-      
-      case "composed_think": {        
-        if (!params.arguments) {
-          console.error("ERROR: params.arguments object is undefined in composed_think request");
-          return {
-            content: [{
-              type: "text",
-              text: JSON.stringify({
-                error: "Invalid request: params.arguments object is undefined",
-                status: "failed"
-              })
-            }],
-            isError: true
-          };
-        }
-        
-        // Type assertion for the params.arguments
-        const toolParams = params.arguments as z.infer<typeof captureThoughtSchema>;
-        
-        const inputData = {
-          thought: toolParams.thought,
-          thoughtNumber: toolParams.thought_number,
-          totalThoughts: toolParams.total_thoughts,
-          nextThoughtNeeded: toolParams.next_thought_needed,
-          stage: toolParams.stage,
-          isRevision: toolParams.is_revision,
-          revisesThought: toolParams.revises_thought,
-          branchFromThought: toolParams.branch_from_thought,
-          branchId: toolParams.branch_id,
-          needsMoreThoughts: toolParams.needs_more_thoughts,
-          score: toolParams.score,
-          tags: toolParams.tags || []
-        };
-        
-        return thinkingServer.composedThink(inputData);
       }
       
       case "get_thinking_summary": {
