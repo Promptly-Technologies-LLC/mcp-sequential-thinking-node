@@ -248,4 +248,73 @@ describe('Sequential Thinking Server Integration', () => {
     expect(summaryData.summary.branches).toHaveProperty("alt-branch");
     console.log('Branching handled successfully');
   });
+
+  it('should revise an existing thought', async () => {
+    // Clear history before test
+    const clearResult = await client.callTool({
+      name: "clear_thinking_history",
+      arguments: {}
+    });
+    debugLog('Clear history response (revision test):', JSON.stringify(clearResult, null, 2));
+    
+    // Add a thought to revise
+    const originalThought = await client.callTool({
+      name: "capture_thought",
+      arguments: {
+        thought: "Initial thought that needs revision",
+        thought_number: 1,
+        total_thoughts: 2,
+        next_thought_needed: true,
+        stage: "Problem Definition",
+        score: 0.6
+      }
+    }) as ToolResponse;
+    
+    debugLog('Original thought response:', JSON.stringify(originalThought, null, 2));
+    expect(originalThought.isError).toBeFalsy();
+    const originalData = JSON.parse(originalThought.content[0].text);
+    expect(originalData.thoughtAnalysis.currentThought.thoughtNumber).toBe(1);
+    expect(originalData.thoughtAnalysis.currentThought.score).toBe(0.6);
+    
+    // Revise the thought
+    const revisionResult = await client.callTool({
+      name: "revise_thought",
+      arguments: {
+        thought_id: 1,
+        thought: "Revised and improved thought",
+        score: 0.8,
+        tags: ["improved", "revised"]
+      }
+    }) as ToolResponse;
+    
+    debugLog('Revision response:', JSON.stringify(revisionResult, null, 2));
+    expect(revisionResult.isError).toBeFalsy();
+    const revisionData = JSON.parse(revisionResult.content[0].text);
+    expect(revisionData.status).toBe("success");
+    expect(revisionData.revision.updated).toBe(true);
+    
+    // Get summary to verify the revision
+    const summaryResult = await client.callTool({
+      name: "get_thinking_summary",
+      arguments: {}
+    }) as ToolResponse;
+    
+    const summaryData = JSON.parse(summaryResult.content[0].text);
+    debugLog('Summary after revision:', summaryData);
+    expect(summaryData.summary.totalThoughts).toBe(1);
+    
+    // Test error handling for invalid thought ID
+    const errorResult = await client.callTool({
+      name: "revise_thought",
+      arguments: {
+        thought_id: 999 // Non-existent thought ID
+      }
+    }) as ToolResponse;
+    
+    debugLog('Error response:', JSON.stringify(errorResult, null, 2));
+    expect(errorResult.isError).toBe(true);
+    const errorData = JSON.parse(errorResult.content[0].text);
+    expect(errorData.status).toBe("failed");
+    expect(errorData.error).toContain("not found");
+  });
 });
