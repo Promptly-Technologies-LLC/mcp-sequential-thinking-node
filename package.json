@@ -1,0 +1,31 @@
+{
+  "name": "@promptly/mcp-sequential-thinking",
+  "version": "1.0.0",
+  "description": "A TypeScript implementation of Sequential Thinking Server using MCP",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "@promptly/mcp-sequential-thinking": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node index.ts",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js tests/integration.test.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.7.0",
+    "luxon": "^3.3.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/luxon": "^3.3.1",
+    "@types/node": "^20.4.5",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.6"
+  }
+} 
