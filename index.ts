@@ -14,7 +14,7 @@ function createServer() {
   const server = new Server(
     {
       name: "structured-thinking",
-      version: "1.0.0"
+      version: "1.0.1"
     },
     {
       capabilities: {
