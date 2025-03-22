@@ -1,0 +1,24 @@
+# Version control
+.git/
+.gitignore
+.npmignore
+
+# Development environments
+.venv/
+.specstory/
+__pycache__/
+*.pyc
+
+# Dependencies
+node_modules/
+
+# Tests
+tests/
+jest.config.js
+
+# Build files that will be created in container
+dist/
+
+# Other
+uv.lock
+*.log 

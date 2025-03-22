@@ -343,7 +343,197 @@ class EnhancedSequentialThinkingServer extends SequentialThinkingServer {
   private reasoningEngine = new ReasoningEngine();
   private metacognitiveMonitor = new MetacognitiveMonitor();
   
-  processThought(inputData: any): any {
+  // Find thought by ID (thought number)
+  private findThoughtById(thoughtId: number): ThoughtData | undefined {
+    return this.thoughtHistory.find(t => t.thoughtNumber === thoughtId);
+  }
+
+  // Update thought in history
+  private updateThought(updatedThought: ThoughtData): void {
+    const idx = this.thoughtHistory.findIndex(t => t.thoughtNumber === updatedThought.thoughtNumber);
+    if (idx !== -1) {
+      this.thoughtHistory[idx] = updatedThought;
+    }
+  }
+
+  // 1. Capture a new thought
+  captureThought(inputData: any): any {
+    try {
+      // Validate and create thought data
+      const thoughtData = this.validateThoughtData(inputData);
+      
+      // Store in memory
+      this.memoryManager.consolidateMemory(thoughtData);
+      
+      // Store thought in history
+      this.thoughtHistory.push(thoughtData);
+      
+      // Handle branching
+      if (thoughtData.branchFromThought && thoughtData.branchId) {
+        if (!this.branches[thoughtData.branchId]) {
+          this.branches[thoughtData.branchId] = [];
+        }
+        this.branches[thoughtData.branchId].push(thoughtData);
+      }
+      
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            status: "success",
+            thoughtCaptured: {
+              thoughtNumber: thoughtData.thoughtNumber,
+              stage: thoughtData.stage,
+              timestamp: thoughtData.createdAt.toISO(),
+              branch: thoughtData.branchId
+            }
+          }, null, 2)
+        }]
+      };
+      
+    } catch (e) {
+      return this.handleError(e);
+    }
+  }
+
+  // 2. Apply reasoning to a thought
+  applyReasoning(input: { thought_id: number; reasoning_type?: string }): any {
+    try {
+      // Find the thought
+      const thought = this.findThoughtById(input.thought_id);
+      if (!thought) {
+        throw new Error(`Thought with ID ${input.thought_id} not found`);
+      }
+      
+      // Apply reasoning strategy
+      const pattern = input.reasoning_type || this.reasoningEngine.analyzeThoughtPattern(thought);
+      const updatedThought = this.reasoningEngine.applyReasoningStrategy(thought);
+      
+      // Update thought in history
+      this.updateThought(updatedThought);
+      
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            status: "success",
+            reasoningApplied: {
+              thoughtNumber: updatedThought.thoughtNumber,
+              pattern: pattern,
+              tags: updatedThought.tags
+            }
+          }, null, 2)
+        }]
+      };
+      
+    } catch (e) {
+      return this.handleError(e);
+    }
+  }
+
+  // 3. Evaluate thought quality
+  evaluateThoughtQuality(input: { thought_id: number }): any {
+    try {
+      // Find the thought
+      const thought = this.findThoughtById(input.thought_id);
+      if (!thought) {
+        throw new Error(`Thought with ID ${input.thought_id} not found`);
+      }
+      
+      // Get quality metrics and improvement suggestions
+      const metrics = this.metacognitiveMonitor.evaluateThoughtQuality(thought);
+      const improvements = this.metacognitiveMonitor.generateImprovementSuggestions(metrics);
+      
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            status: "success",
+            evaluation: {
+              thoughtNumber: thought.thoughtNumber,
+              qualityMetrics: metrics,
+              suggestedImprovements: improvements
+            }
+          }, null, 2)
+        }]
+      };
+      
+    } catch (e) {
+      return this.handleError(e);
+    }
+  }
+
+  // 4. Retrieve relevant thoughts
+  retrieveRelevantThoughts(input: { thought_id: number }): any {
+    try {
+      // Find the thought
+      const thought = this.findThoughtById(input.thought_id);
+      if (!thought) {
+        throw new Error(`Thought with ID ${input.thought_id} not found`);
+      }
+      
+      // Get related thoughts
+      const relatedThoughts = this.memoryManager.retrieveRelevantThoughts(thought);
+      
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            status: "success",
+            retrieval: {
+              thoughtNumber: thought.thoughtNumber,
+              relatedThoughtsCount: relatedThoughts.length,
+              relatedThoughts: relatedThoughts.map(t => ({
+                thoughtNumber: t.thoughtNumber,
+                stage: t.stage,
+                tags: t.tags
+              }))
+            }
+          }, null, 2)
+        }]
+      };
+      
+    } catch (e) {
+      return this.handleError(e);
+    }
+  }
+
+  // 5. Branch thought
+  branchThought(input: { parent_thought_id: number; branch_id: string }): any {
+    try {
+      // Find the parent thought
+      const parentThought = this.findThoughtById(input.parent_thought_id);
+      if (!parentThought) {
+        throw new Error(`Parent thought with ID ${input.parent_thought_id} not found`);
+      }
+      
+      // Create branch if it doesn't exist
+      if (!this.branches[input.branch_id]) {
+        this.branches[input.branch_id] = [];
+        this.activeBranchId = input.branch_id;
+      }
+      
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            status: "success",
+            branching: {
+              parentThoughtNumber: parentThought.thoughtNumber,
+              branchId: input.branch_id,
+              isActive: this.activeBranchId === input.branch_id
+            }
+          }, null, 2)
+        }]
+      };
+      
+    } catch (e) {
+      return this.handleError(e);
+    }
+  }
+
+  // Original processThought renamed to composedThink for backward compatibility and for the composed_think tool
+  composedThink(inputData: any): any {
     try {
       // Validate and create thought data
       const thoughtData = this.validateThoughtData(inputData);
@@ -403,20 +593,25 @@ class EnhancedSequentialThinkingServer extends SequentialThinkingServer {
       };
       
     } catch (e) {
-      console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify({
-            error: e instanceof Error ? e.message : String(e),
-            status: "failed",
-            errorType: e instanceof Error ? e.constructor.name : "Unknown",
-            timestamp: DateTime.now().toISO()
-          }, null, 2)
-        }],
-        isError: true
-      };
+      return this.handleError(e);
     }
+  }
+
+  // Helper method for error handling
+  private handleError(e: unknown): any {
+    console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          error: e instanceof Error ? e.message : String(e),
+          status: "failed",
+          errorType: e instanceof Error ? e.constructor.name : "Unknown",
+          timestamp: DateTime.now().toISO()
+        }, null, 2)
+      }],
+      isError: true
+    };
   }
 
   clearHistory(): void {
@@ -447,12 +642,15 @@ const SequentialThinkingSchema = z.object({
 function createServer() {
   const server = new Server(
     {
-      name: "sequential-thinking",
+      name: "structured-thinking",
       version: "1.0.0"
     },
     {
       capabilities: {
-        tools: {}
+        tools: {
+          list: true,
+          call: true
+        }
       }
     }
   );
@@ -462,8 +660,104 @@ function createServer() {
   // Define the available tools
   const toolDefinitions = [
     {
-      name: "sequential_thinking",
-      description: "An advanced tool for dynamic and reflective problem-solving through structured thoughts.",
+      name: "capture_thought",
+      description: "Stores a new thought in memory and in the thought history.",
+      parameters: z.object({
+        thought: z.string().describe("The content of the current thought"),
+        thought_number: z.number().int().positive().describe("Current position in the sequence"),
+        total_thoughts: z.number().int().positive().describe("Expected total number of thoughts"),
+        next_thought_needed: z.boolean().describe("Whether another thought should follow"),
+        stage: z.string().describe("Current thinking stage (e.g., 'Problem Definition', 'Analysis')"),
+        is_revision: z.boolean().optional().describe("Whether this revises a previous thought"),
+        revises_thought: z.number().int().optional().describe("Number of thought being revised"),
+        branch_from_thought: z.number().int().optional().describe("Starting point for a new thought branch"),
+        branch_id: z.string().optional().describe("Identifier for the current branch"),
+        needs_more_thoughts: z.boolean().optional().describe("Whether additional thoughts are needed"),
+        score: z.number().min(0).max(1).optional().describe("Quality score (0.0 to 1.0)"),
+        tags: z.array(z.string()).optional().describe("Categories or labels for the thought")
+      }),
+      inputSchema: {
+        type: "object",
+        properties: {
+          thought: { type: "string", description: "The content of the current thought" },
+          thought_number: { type: "integer", description: "Current position in the sequence" },
+          total_thoughts: { type: "integer", description: "Expected total number of thoughts" },
+          next_thought_needed: { type: "boolean", description: "Whether another thought should follow" },
+          stage: { type: "string", description: "Current thinking stage (e.g., 'Problem Definition', 'Analysis')" },
+          is_revision: { type: "boolean", description: "Whether this revises a previous thought" },
+          revises_thought: { type: "integer", description: "Number of thought being revised" },
+          branch_from_thought: { type: "integer", description: "Starting point for a new thought branch" },
+          branch_id: { type: "string", description: "Identifier for the current branch" },
+          needs_more_thoughts: { type: "boolean", description: "Whether additional thoughts are needed" },
+          score: { type: "number", description: "Quality score (0.0 to 1.0)" },
+          tags: { type: "array", items: { type: "string" }, description: "Categories or labels for the thought" }
+        },
+        required: ["thought", "thought_number", "total_thoughts", "next_thought_needed", "stage"]
+      }
+    },
+    {
+      name: "apply_reasoning",
+      description: "Applies a reasoning strategy to a given thought in memory.",
+      parameters: z.object({
+        thought_id: z.number().int().positive().describe("The ID (thought number) of the thought to analyze"),
+        reasoning_type: z.string().optional().describe("Optional specific reasoning type to apply")
+      }),
+      inputSchema: {
+        type: "object",
+        properties: {
+          thought_id: { type: "integer", description: "The ID (thought number) of the thought to analyze" },
+          reasoning_type: { type: "string", description: "Optional specific reasoning type to apply" }
+        },
+        required: ["thought_id"]
+      }
+    },
+    {
+      name: "evaluate_thought_quality",
+      description: "Runs a metacognitive quality check on the specified thought.",
+      parameters: z.object({
+        thought_id: z.number().int().positive().describe("The ID (thought number) of the thought to evaluate")
+      }),
+      inputSchema: {
+        type: "object",
+        properties: {
+          thought_id: { type: "integer", description: "The ID (thought number) of the thought to evaluate" }
+        },
+        required: ["thought_id"]
+      }
+    },
+    {
+      name: "retrieve_relevant_thoughts",
+      description: "Finds thoughts from long-term storage that share tags with the specified thought.",
+      parameters: z.object({
+        thought_id: z.number().int().positive().describe("The ID of the thought to find related thoughts for")
+      }),
+      inputSchema: {
+        type: "object",
+        properties: {
+          thought_id: { type: "integer", description: "The ID of the thought to find related thoughts for" }
+        },
+        required: ["thought_id"]
+      }
+    },
+    {
+      name: "branch_thought",
+      description: "Creates or handles branching from a parent thought.",
+      parameters: z.object({
+        parent_thought_id: z.number().int().positive().describe("The ID of the parent thought to branch from"),
+        branch_id: z.string().describe("Identifier for the new branch")
+      }),
+      inputSchema: {
+        type: "object",
+        properties: {
+          parent_thought_id: { type: "integer", description: "The ID of the parent thought to branch from" },
+          branch_id: { type: "string", description: "Identifier for the new branch" }
+        },
+        required: ["parent_thought_id", "branch_id"]
+      }
+    },
+    {
+      name: "composed_think",
+      description: "Performs the entire thinking pipeline in one operation (capture, reasoning, evaluation, and retrieval).",
       parameters: SequentialThinkingSchema,
       inputSchema: {
         type: "object",
@@ -515,8 +809,95 @@ function createServer() {
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { params } = request;
     
+    // Add defensive checks before processing
+    if (!params) {
+      console.error("ERROR: params object is undefined in request:", request);
+      return { 
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            error: "Invalid request: params object is undefined",
+            status: "failed"
+          })
+        }],
+        isError: true
+      };
+    }
+    
     switch (params.name) {
-      case "sequential_thinking": {
+      case "capture_thought": {
+        // Add defensive check for parameters
+        if (!params.parameters) {
+          console.error("ERROR: params.parameters is undefined in capture_thought request");
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                error: "Invalid request: parameters object is undefined",
+                status: "failed"
+              })
+            }],
+            isError: true
+          };
+        }
+        
+        // Type assertion for the parameters
+        const captureParams = params.parameters as z.infer<typeof SequentialThinkingSchema>;
+        
+        const inputData = {
+          thought: captureParams.thought,
+          thoughtNumber: captureParams.thought_number,
+          totalThoughts: captureParams.total_thoughts,
+          nextThoughtNeeded: captureParams.next_thought_needed,
+          stage: captureParams.stage,
+          isRevision: captureParams.is_revision,
+          revisesThought: captureParams.revises_thought,
+          branchFromThought: captureParams.branch_from_thought,
+          branchId: captureParams.branch_id,
+          needsMoreThoughts: captureParams.needs_more_thoughts,
+          score: captureParams.score,
+          tags: captureParams.tags || []
+        };
+        
+        return thinkingServer.captureThought(inputData);
+      }
+      
+      case "apply_reasoning": {
+        const { thought_id, reasoning_type } = params.parameters as { thought_id: number; reasoning_type?: string };
+        return thinkingServer.applyReasoning({ thought_id, reasoning_type });
+      }
+      
+      case "evaluate_thought_quality": {
+        const { thought_id } = params.parameters as { thought_id: number };
+        return thinkingServer.evaluateThoughtQuality({ thought_id });
+      }
+      
+      case "retrieve_relevant_thoughts": {
+        const { thought_id } = params.parameters as { thought_id: number };
+        return thinkingServer.retrieveRelevantThoughts({ thought_id });
+      }
+      
+      case "branch_thought": {
+        const { parent_thought_id, branch_id } = params.parameters as { parent_thought_id: number; branch_id: string };
+        return thinkingServer.branchThought({ parent_thought_id, branch_id });
+      }
+      
+      case "composed_think": {
+        // Add defensive check for parameters
+        if (!params.parameters) {
+          console.error("ERROR: params.parameters is undefined in composed_think request");
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                error: "Invalid request: parameters object is undefined",
+                status: "failed"
+              })
+            }],
+            isError: true
+          };
+        }
+        
         // Type assertion for the parameters
         const toolParams = params.parameters as z.infer<typeof SequentialThinkingSchema>;
         
@@ -535,10 +916,7 @@ function createServer() {
           tags: toolParams.tags || []
         };
         
-        const result = thinkingServer.processThought(inputData);
-        return {
-          content: result.content
-        };
+        return thinkingServer.composedThink(inputData);
       }
       
       case "get_thinking_summary": {
@@ -572,28 +950,8 @@ function createServer() {
 }
 
 // Main entry point
-export async function main() {
-  console.log("Sequential Thinking Server Starting...");
-  const server = createServer();
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-}
-
-// Run the server if this is the main module
-const isMainModule = import.meta.url === `file://${process.argv[1]}`;
-if (isMainModule) {
-  try {
-    console.log("Sequential Thinking Server");
-    console.log("Version: 1.0.0");
-    console.log("Available stages:", Object.values(ThoughtStage).join(", "));
-    main().catch(e => {
-      console.error(`Fatal Error: ${e instanceof Error ? e.message : String(e)}`);
-      process.exit(1);
-    });
-  } catch (e) {
-    console.error(`Fatal Error: ${e instanceof Error ? e.message : String(e)}`);
-    process.exit(1);
-  }
-}
+const server = createServer();
+const transport = new StdioServerTransport();
+server.connect(transport);
 
 export { createServer }; 

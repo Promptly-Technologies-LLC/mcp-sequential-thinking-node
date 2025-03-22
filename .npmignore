@@ -1,0 +1,12 @@
+# Development files
+.git/
+.gitignore
+.dockerignore
+.specstory/
+node_modules/
+tests/
+jest.config.js
+uv.lock
+
+# Only include compiled JavaScript
+# Note: dist/ is intentionally NOT ignored as it contains the published code 

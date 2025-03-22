@@ -100,7 +100,7 @@ describe('Sequential Thinking Server Integration', () => {
     // Check for our specific tools
     const toolNames = response.tools.map(tool => tool.name);
     console.log('Available tools:', toolNames);
-    expect(toolNames).toContain('sequential_thinking');
+    expect(toolNames).toContain('composed_think');
     expect(toolNames).toContain('get_thinking_summary');
     expect(toolNames).toContain('clear_thinking_history');
   });
@@ -121,7 +121,7 @@ describe('Sequential Thinking Server Integration', () => {
     
     // Submit a thought
     const thoughtResult = await client.callTool({
-      name: "sequential_thinking",
+      name: "composed_think",
       parameters: {
         thought: "This is a test thought for integration testing",
         thought_number: 1,
@@ -163,7 +163,7 @@ describe('Sequential Thinking Server Integration', () => {
     
     // Add first thought
     const thought1Result = await client.callTool({
-      name: "sequential_thinking",
+      name: "composed_think",
       parameters: {
         thought: "Initial thought",
         thought_number: 1,
@@ -178,7 +178,7 @@ describe('Sequential Thinking Server Integration', () => {
     
     // Add second thought in sequence
     const thought2Result = await client.callTool({
-      name: "sequential_thinking",
+      name: "composed_think",
       parameters: {
         thought: "Follow-up thought",
         thought_number: 2,
@@ -193,7 +193,7 @@ describe('Sequential Thinking Server Integration', () => {
     
     // Add a branch thought
     const branchResult = await client.callTool({
-      name: "sequential_thinking",
+      name: "composed_think",
       parameters: {
         thought: "Alternative approach",
         thought_number: 1,

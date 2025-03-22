@@ -1,6 +1,6 @@
-# Sequential Thinking MCP Server
+# Structured Thinking MCP Server
 
-A TypeScript implementation of the [Sequential Thinking](https://github.com/arben-adm/mcp-sequential-thinking) Python server by [Arben Ademi](https://github.com/arben-adm) using the Model Context Protocol (MCP).
+A TypeScript implementation of the [Structured Thinking](https://github.com/arben-adm/mcp-sequential-thinking) Python server by [Arben Ademi](https://github.com/arben-adm) using the Model Context Protocol (MCP).
 
 The motivation for the translation was to allow easier global installation and usage of the tool. (The Python ecosystem discourages global installation.)
 
@@ -10,9 +10,9 @@ Set the tool configuration in Claude Desktop, Cursor, or another MCP client as f
 
 ```json
 {
-  "@promptly-technologies/mcp-sequential-thinking": {
+  "structured-thinking": {
     "command": "npx",
-    "args": ["-y", "@promptly-technologies/mcp-sequential-thinking"]
+    "args": ["-y", "structured-thinking"]
   }
 }
 ```
@@ -38,7 +38,7 @@ This server provides tools for structured, reflective thinking through a series 
 
 The server exposes the following MCP tools:
 
-### sequential_thinking
+### think
 
 Process a structured thought with reflective analysis.
 
