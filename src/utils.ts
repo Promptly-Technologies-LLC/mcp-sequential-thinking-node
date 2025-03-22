@@ -1,29 +1,30 @@
-import { ThoughtStage } from "./types";
+import { ThoughtStage } from "./types.js";
 
 // Helper to convert string to ThoughtStage
-function thoughtStageFromString(value: string): ThoughtStage {
-  // Try direct conversion first
-  if (Object.values(ThoughtStage).includes(value as ThoughtStage)) {
-    return value as ThoughtStage;
+export function thoughtStageFromString(stage: string): ThoughtStage {
+  switch (stage.toLowerCase()) {
+    case "problem definition":
+      return ThoughtStage.PROBLEM_DEFINITION;
+    case "analysis":
+      return ThoughtStage.ANALYSIS;
+    case "ideation":
+      return ThoughtStage.IDEATION;
+    case "evaluation":
+      return ThoughtStage.EVALUATION;
+    case "implementation":
+      return ThoughtStage.IMPLEMENTATION;
+    case "refinement":
+      return ThoughtStage.REFINEMENT;
+    case "plan":
+      return ThoughtStage.PLAN;
+    case "research":
+      return ThoughtStage.RESEARCH;
+    case "synthesis":
+      return ThoughtStage.SYNTHESIS;
+    case "conclusion":
+      return ThoughtStage.CONCLUSION;
+    default:
+      // Default to problem definition if stage is unknown
+      return ThoughtStage.PROBLEM_DEFINITION;
   }
-
-  // Try case-insensitive match with enum names
-  const upperValue = value.toUpperCase();
-  for (const stageName of Object.keys(ThoughtStage)) {
-    if (stageName.toUpperCase() === upperValue) {
-      return ThoughtStage[stageName as keyof typeof ThoughtStage];
-    }
-  }
-
-  // Try matching the value part
-  for (const stageValue of Object.values(ThoughtStage)) {
-    if (stageValue.toUpperCase() === upperValue) {
-      return stageValue as ThoughtStage;
-    }
-  }
-
-  // If no match found, throw error
-  throw new Error(`Invalid stage: ${value}. Valid stages are: ${Object.values(ThoughtStage).join(", ")}`);
 }
-
-export { thoughtStageFromString };

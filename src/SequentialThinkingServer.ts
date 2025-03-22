@@ -1,6 +1,6 @@
-import { ThoughtStage } from "./types";
-import { ThoughtData } from "./types";
-import { thoughtStageFromString } from "./utils";
+import { ThoughtStage } from "./types.js";
+import { ThoughtData } from "./types.js";
+import { thoughtStageFromString } from "./utils.js";
 import { DateTime } from "luxon";
 
 // Classes for memory management, reasoning, and metacognition

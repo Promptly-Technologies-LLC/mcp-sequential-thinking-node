@@ -8,9 +8,9 @@
     "strict": true,
     "declaration": true,
     "resolveJsonModule": true,
-    "rootDir": "./",
+    "rootDir": ".",
     "skipLibCheck": true
   },
-  "include": ["*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["index.ts", "src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "tests"]
 } 

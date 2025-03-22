@@ -7,7 +7,7 @@ import {
   ListToolsRequestSchema
 } from "@modelcontextprotocol/sdk/types.js";
 import { EnhancedSequentialThinkingServer } from "./src/SequentialThinkingServer.js";
-import { toolDefinitions, SequentialThinkingSchema } from "./src/tools.js";
+import { toolDefinitions, captureThoughtSchema } from "./src/tools.js";
 
 // Create and configure the MCP server
 function createServer() {
@@ -72,7 +72,7 @@ function createServer() {
         }
         
         // Type assertion for the parameters
-        const captureParams = params.parameters as z.infer<typeof SequentialThinkingSchema>;
+        const captureParams = params.parameters as z.infer<typeof captureThoughtSchema>;
         
         const inputData = {
           thought: captureParams.thought,
@@ -129,7 +129,7 @@ function createServer() {
         }
         
         // Type assertion for the parameters
-        const toolParams = params.parameters as z.infer<typeof SequentialThinkingSchema>;
+        const toolParams = params.parameters as z.infer<typeof captureThoughtSchema>;
         
         const inputData = {
           thought: toolParams.thought,

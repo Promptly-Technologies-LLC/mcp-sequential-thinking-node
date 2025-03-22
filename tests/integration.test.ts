@@ -1,12 +1,18 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import * as path from 'node:path';
-import * as os from 'node:os';
 
 interface ToolResponse {
   content: Array<{ type: string; text: string }>;
   isError?: boolean;
+}
+
+// Debug logging utility
+const DEBUG = process.env.DEBUG_LOGS === 'true';
+function debugLog(...args: any[]): void {
+  if (DEBUG) {
+    console.log(...args);
+  }
 }
 
 describe('Sequential Thinking Server Integration', () => {
@@ -72,26 +78,35 @@ describe('Sequential Thinking Server Integration', () => {
   afterAll(async () => {
     try {
       console.log('Cleaning up...');
-      // Ensure transport is properly closed
+      
+      // First close the client
+      if (client) {
+        console.log('Closing client...');
+        await client.close();
+        console.log('Client closed successfully');
+      }
+      
+      // Then close the transport
       if (transport) {
         console.log('Closing transport...');
         transport.close();
         
         // Allow time for the subprocess to terminate
         await new Promise<void>(resolve => {
-          setTimeout(resolve, 100);
+          setTimeout(resolve, 500);
         });
         
         console.log('Transport closed successfully');
       }
     } catch (err) {
-      console.error('Error closing transport:', err);
+      console.error('Error during cleanup:', err);
     }
   });
 
   it('should list available tools', async () => {
     console.log('Testing tool listing...');
     const response = await client.listTools();
+    debugLog('List tools response:', JSON.stringify(response, null, 2));
     expect(response).toBeDefined();
     expect(response).toHaveProperty('tools');
     expect(Array.isArray(response.tools)).toBe(true);
@@ -99,7 +114,7 @@ describe('Sequential Thinking Server Integration', () => {
     
     // Check for our specific tools
     const toolNames = response.tools.map(tool => tool.name);
-    console.log('Available tools:', toolNames);
+    debugLog('Available tools:', toolNames);
     expect(toolNames).toContain('composed_think');
     expect(toolNames).toContain('get_thinking_summary');
     expect(toolNames).toContain('clear_thinking_history');
@@ -114,8 +129,10 @@ describe('Sequential Thinking Server Integration', () => {
       parameters: {}
     }) as ToolResponse;
     
+    debugLog('Clear history response:', JSON.stringify(clearResult, null, 2));
     expect(clearResult.isError).toBeFalsy();
     const clearData = JSON.parse(clearResult.content[0].text);
+    debugLog('Clear history data:', clearData);
     expect(clearData.status).toBe("success");
     console.log('History cleared successfully');
     
@@ -133,8 +150,10 @@ describe('Sequential Thinking Server Integration', () => {
       }
     }) as ToolResponse;
     
+    debugLog('Thought processing response:', JSON.stringify(thoughtResult, null, 2));
     expect(thoughtResult.isError).toBeFalsy();
     const thoughtData = JSON.parse(thoughtResult.content[0].text);
+    debugLog('Thought processing data:', thoughtData);
     expect(thoughtData).toHaveProperty('thoughtAnalysis');
     expect(thoughtData.thoughtAnalysis.currentThought.thoughtNumber).toBe(1);
     expect(thoughtData.thoughtAnalysis.currentThought.stage).toBe("Problem Definition");
@@ -146,8 +165,10 @@ describe('Sequential Thinking Server Integration', () => {
       parameters: {}
     }) as ToolResponse;
     
+    debugLog('Summary response:', JSON.stringify(summaryResult, null, 2));
     expect(summaryResult.isError).toBeFalsy();
     const summaryData = JSON.parse(summaryResult.content[0].text);
+    debugLog('Summary data:', summaryData);
     expect(summaryData).toHaveProperty('summary');
     expect(summaryData.summary.totalThoughts).toBe(1);
     expect(summaryData.summary.stages).toHaveProperty('Problem Definition');
@@ -156,10 +177,11 @@ describe('Sequential Thinking Server Integration', () => {
 
   it('should handle thought sequencing and branching', async () => {
     // Clear history before test
-    await client.callTool({
+    const clearResult = await client.callTool({
       name: "clear_thinking_history",
       parameters: {}
     });
+    debugLog('Clear history response (branching test):', JSON.stringify(clearResult, null, 2));
     
     // Add first thought
     const thought1Result = await client.callTool({
@@ -174,6 +196,7 @@ describe('Sequential Thinking Server Integration', () => {
       }
     }) as ToolResponse;
     
+    debugLog('First thought response:', JSON.stringify(thought1Result, null, 2));
     expect(thought1Result.isError).toBeFalsy();
     
     // Add second thought in sequence
@@ -189,6 +212,7 @@ describe('Sequential Thinking Server Integration', () => {
       }
     }) as ToolResponse;
     
+    debugLog('Second thought response:', JSON.stringify(thought2Result, null, 2));
     expect(thought2Result.isError).toBeFalsy();
     
     // Add a branch thought
@@ -206,8 +230,10 @@ describe('Sequential Thinking Server Integration', () => {
       }
     }) as ToolResponse;
     
+    debugLog('Branch thought response:', JSON.stringify(branchResult, null, 2));
     expect(branchResult.isError).toBeFalsy();
     const branchData = JSON.parse(branchResult.content[0].text);
+    debugLog('Branch data:', branchData);
     expect(branchData.thoughtAnalysis.context.activeBranches).toContain("alt-branch");
     
     // Get summary and check branches
@@ -216,7 +242,9 @@ describe('Sequential Thinking Server Integration', () => {
       parameters: {}
     }) as ToolResponse;
     
+    debugLog('Final summary response:', JSON.stringify(summaryResult, null, 2));
     const summaryData = JSON.parse(summaryResult.content[0].text);
+    debugLog('Final summary data:', summaryData);
     expect(summaryData.summary.totalThoughts).toBe(3);
     expect(summaryData.summary.branches).toHaveProperty("alt-branch");
     console.log('Branching handled successfully');
