@@ -126,7 +126,7 @@ describe('Sequential Thinking Server Integration', () => {
     // Clear any existing history first
     const clearResult = await client.callTool({
       name: "clear_thinking_history",
-      parameters: {}
+      arguments: {}
     }) as ToolResponse;
     
     debugLog('Clear history response:', JSON.stringify(clearResult, null, 2));
@@ -139,14 +139,12 @@ describe('Sequential Thinking Server Integration', () => {
     // Submit a thought
     const thoughtResult = await client.callTool({
       name: "composed_think",
-      parameters: {
+      arguments: {
         thought: "This is a test thought for integration testing",
         thought_number: 1,
         total_thoughts: 3,
         next_thought_needed: true,
-        stage: "Problem Definition",
-        score: 0.8,
-        tags: ["test", "integration"]
+        stage: "Problem Definition"
       }
     }) as ToolResponse;
     
@@ -162,7 +160,7 @@ describe('Sequential Thinking Server Integration', () => {
     // Get summary
     const summaryResult = await client.callTool({
       name: "get_thinking_summary",
-      parameters: {}
+      arguments: {}
     }) as ToolResponse;
     
     debugLog('Summary response:', JSON.stringify(summaryResult, null, 2));
@@ -179,7 +177,7 @@ describe('Sequential Thinking Server Integration', () => {
     // Clear history before test
     const clearResult = await client.callTool({
       name: "clear_thinking_history",
-      parameters: {}
+      arguments: {}
     });
     debugLog('Clear history response (branching test):', JSON.stringify(clearResult, null, 2));
     

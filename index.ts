@@ -55,24 +55,28 @@ function createServer() {
     }
     
     switch (params.name) {
-      case "capture_thought": {
-        // Add defensive check for parameters
-        if (!params.parameters) {
-          console.error("ERROR: params.parameters is undefined in capture_thought request");
+      case "capture_thought": {        
+        if (!params.arguments && params.arguments) {
+          params.arguments = params.arguments;
+        }
+        
+        if (!params.arguments) {
+          console.error("ERROR: arguments are undefined in capture_thought request");
           return {
             content: [{
               type: "text",
               text: JSON.stringify({
-                error: "Invalid request: parameters object is undefined",
-                status: "failed"
+                error: "Invalid request: arguments object is defined",
+                status: "failed",
+                received: JSON.stringify(params)
               })
             }],
             isError: true
           };
         }
         
-        // Type assertion for the parameters
-        const captureParams = params.parameters as z.infer<typeof captureThoughtSchema>;
+        // Type assertion for the params.arguments
+        const captureParams = params.arguments as z.infer<typeof captureThoughtSchema>;
         
         const inputData = {
           thought: captureParams.thought,
@@ -92,35 +96,14 @@ function createServer() {
         return thinkingServer.captureThought(inputData);
       }
       
-      case "apply_reasoning": {
-        const { thought_id, reasoning_type } = params.parameters as { thought_id: number; reasoning_type?: string };
-        return thinkingServer.applyReasoning({ thought_id, reasoning_type });
-      }
-      
-      case "evaluate_thought_quality": {
-        const { thought_id } = params.parameters as { thought_id: number };
-        return thinkingServer.evaluateThoughtQuality({ thought_id });
-      }
-      
-      case "retrieve_relevant_thoughts": {
-        const { thought_id } = params.parameters as { thought_id: number };
-        return thinkingServer.retrieveRelevantThoughts({ thought_id });
-      }
-      
-      case "branch_thought": {
-        const { parent_thought_id, branch_id } = params.parameters as { parent_thought_id: number; branch_id: string };
-        return thinkingServer.branchThought({ parent_thought_id, branch_id });
-      }
-      
-      case "composed_think": {
-        // Add defensive check for parameters
-        if (!params.parameters) {
-          console.error("ERROR: params.parameters is undefined in composed_think request");
+      case "apply_reasoning": {        
+        if (!params.arguments) {
+          console.error("ERROR: params.arguments object is undefined in apply_reasoning request");
           return {
             content: [{
               type: "text",
               text: JSON.stringify({
-                error: "Invalid request: parameters object is undefined",
+                error: "Invalid request: params.arguments object is undefined",
                 status: "failed"
               })
             }],
@@ -128,8 +111,84 @@ function createServer() {
           };
         }
         
-        // Type assertion for the parameters
-        const toolParams = params.parameters as z.infer<typeof captureThoughtSchema>;
+        const { thought_id, reasoning_type } = params.arguments as { thought_id: number; reasoning_type?: string };
+        return thinkingServer.applyReasoning({ thought_id, reasoning_type });
+      }
+      
+      case "evaluate_thought_quality": {        
+        if (!params.arguments) {
+          console.error("ERROR: params.arguments object is undefined in evaluate_thought_quality request");
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                error: "Invalid request: params.arguments object is undefined",
+                status: "failed"
+              })
+            }],
+            isError: true
+          };
+        }
+        
+        const { thought_id } = params.arguments as { thought_id: number };
+        return thinkingServer.evaluateThoughtQuality({ thought_id });
+      }
+      
+      case "retrieve_relevant_thoughts": {        
+        if (!params.arguments) {
+          console.error("ERROR: params.arguments object is undefined in retrieve_relevant_thoughts request");
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                error: "Invalid request: params.arguments object is undefined",
+                status: "failed"
+              })
+            }],
+            isError: true
+          };
+        }
+        
+        const { thought_id } = params.arguments as { thought_id: number };
+        return thinkingServer.retrieveRelevantThoughts({ thought_id });
+      }
+      
+      case "branch_thought": {        
+        if (!params.arguments) {
+          console.error("ERROR: params.arguments object is undefined in branch_thought request");
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                error: "Invalid request: params.arguments object is undefined",
+                status: "failed"
+              })
+            }],
+            isError: true
+          };
+        }
+        
+        const { parent_thought_id, branch_id } = params.arguments as { parent_thought_id: number; branch_id: string };
+        return thinkingServer.branchThought({ parent_thought_id, branch_id });
+      }
+      
+      case "composed_think": {        
+        if (!params.arguments) {
+          console.error("ERROR: params.arguments object is undefined in composed_think request");
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                error: "Invalid request: params.arguments object is undefined",
+                status: "failed"
+              })
+            }],
+            isError: true
+          };
+        }
+        
+        // Type assertion for the params.arguments
+        const toolParams = params.arguments as z.infer<typeof captureThoughtSchema>;
         
         const inputData = {
           thought: toolParams.thought,
