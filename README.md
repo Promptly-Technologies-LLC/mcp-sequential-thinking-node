@@ -10,11 +10,9 @@ Set the tool configuration in Claude Desktop, Cursor, or another MCP client as f
 
 ```json
 {
-  "tools": {
-    "@promptly/mcp-sequential-thinking": {
-      "command": "npx",
-      "args": ["-y", "@promptly/mcp-sequential-thinking"]
-    }
+  "@promptly-technologies/mcp-sequential-thinking": {
+    "command": "npx",
+    "args": ["-y", "@promptly-technologies/mcp-sequential-thinking"]
   }
 }
 ```

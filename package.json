@@ -1,11 +1,11 @@
 {
-  "name": "@promptly/mcp-sequential-thinking",
+  "name": "@promptly-technologies/mcp-sequential-thinking",
   "version": "1.0.0",
   "description": "A TypeScript implementation of Sequential Thinking Server using MCP",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "@promptly/mcp-sequential-thinking": "./dist/index.js"
+    "@promptly-technologies/mcp-sequential-thinking": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc",
