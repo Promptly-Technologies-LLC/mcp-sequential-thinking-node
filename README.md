@@ -1,8 +1,6 @@
 # Structured Thinking MCP Server
 
-A TypeScript implementation of the [Structured Thinking](https://github.com/arben-adm/mcp-sequential-thinking) Python server by [Arben Ademi](https://github.com/arben-adm) using the Model Context Protocol (MCP).
-
-The motivation for the translation was to allow easier global installation and usage of the tool. (The Python ecosystem discourages global installation.)
+A TypeScript Model Context Protocol (MCP) server based on [Arben Ademi](https://github.com/arben-adm)'s [Sequential Thinking](https://github.com/arben-adm/mcp-sequential-thinking) Python server. The motivation for this project is to allow LLMs to programmatically construct mind maps to explore an idea space, with enforced "metacognitive" self-reflection and memory consolidation.
 
 ## Setup
 
@@ -19,28 +17,35 @@ Set the tool configuration in Claude Desktop, Cursor, or another MCP client as f
 
 ## Overview
 
-This server provides tools for structured, reflective thinking through a series of thought stages. It implements:
+### Thought Quality Scores
 
-- Sequential thinking with stage management
-- Memory consolidation for thought patterns
-- Reasoning strategy application
-- Metacognitive monitoring and analysis
+When an LLM captures a thought, it assigns that thought a quality score between 0 and 1. This score is used, in combination with the thought's stage, for providing "metacognitive" feedback to the LLM how to "steer" its thinking process.
 
-## Features
+### Thought Stages
 
-- **Thought Stages**: Process thinking through structured stages (Problem Definition, Analysis, Ideation, etc.)
-- **Memory Management**: Store important thoughts for later reference
-- **Reasoning Patterns**: Apply different reasoning strategies (deductive, inductive, creative, etc.)
-- **Metacognitive Insights**: Analyze thought quality and provide improvement suggestions
-- **Branching Support**: Create and manage thought branches for exploring alternatives
+Each thought is tagged with a stage (e.g., Problem Definition, Analysis, Ideation) to help manage the life-cycle of the LLM's thinking process. In the current implementation, these stages play a very important role. In effect, if the LLM spends too long in a given stage or is having low-quality thoughts in the current stage, the server will provide feedback to the LLM to "steer" its thinking toward other stages, or at least toward thinking strategies that are atypical of the current stage. (E.g., in deductive mode, the LLM will be encouraged to consider more creative thoughts.)
+
+### Thought Branching
+
+The LLM can spawn “branches” off a particular thought to explore different lines of reasoning in parallel. Each branch is tracked separately, letting you manage scenarios where multiple solutions or ideas should coexist.
+
+### Memory Management
+
+The server maintains a "short-term" memory buffer of the LLM's ten most recent thoughts, and a "long-term" memory of thoughts that can be retrieved based on their tags for summarization of the entire history of the LLM's thinking process on a given topic.
+
+### Limitations
+
+Currently, the quality metrics and metacognitive feedback are derived mechanically from naive stage-based multipliers applied to a single self-reported quality score.
+
+As part of the future work, I plan to add more sophisticated metacognitive feedback, including semantic analysis of thought content, thought verification processes, and more intelligent monitoring for reasoning errors.
 
 ## MCP Tools
 
 The server exposes the following MCP tools:
 
-### think
+### capture_thought
 
-Process a structured thought with reflective analysis.
+Create a thought in the thought history, with metadata about the thought's type, quality, content, and relationships to other thoughts.
 
 Parameters:
 - `thought`: The content of the current thought
@@ -55,6 +60,21 @@ Parameters:
 - `needs_more_thoughts` (optional): Whether additional thoughts are needed
 - `score` (optional): Quality score (0.0 to 1.0)
 - `tags` (optional): Categories or labels for the thought
+
+### revise_thought
+
+Revise a thought in the thought history, with metadata about the thought's type, quality, content, and relationships to other thoughts.
+
+Parameters:
+- `thought_id`: The ID of the thought to revise
+- Parameters from `capture_thought`
+
+### retrieve_relevant_thoughts
+
+Retrieve thoughts from long-term storage that share tags with the specified thought.
+
+Parameters:
+- `thought_id`: The ID of the thought to retrieve relevant thoughts for
 
 ### get_thinking_summary
 
