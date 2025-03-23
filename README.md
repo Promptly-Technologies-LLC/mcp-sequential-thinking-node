@@ -1,6 +1,6 @@
 # Structured Thinking MCP Server
 
-A TypeScript Model Context Protocol (MCP) server based on [Arben Ademi](https://github.com/arben-adm)'s [Sequential Thinking](https://github.com/arben-adm/mcp-sequential-thinking) Python server. The motivation for this project is to allow LLMs to programmatically construct mind maps to explore an idea space, with enforced "metacognitive" self-reflection and memory consolidation.
+A TypeScript Model Context Protocol (MCP) server based on [Arben Ademi](https://github.com/arben-adm)'s [Sequential Thinking](https://github.com/arben-adm/mcp-sequential-thinking) Python server. The motivation for this project is to allow LLMs to programmatically construct mind maps to explore an idea space, with enforced "metacognitive" self-reflection.
 
 ## Setup
 
