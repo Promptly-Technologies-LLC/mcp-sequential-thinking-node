@@ -35,7 +35,7 @@ The server maintains a "short-term" memory buffer of the LLM's ten most recent t
 
 ## Limitations
 
-### Naive Matacognitive Monitoring
+### Naive Metacognitive Monitoring
 
 Currently, the quality metrics and metacognitive feedback are derived mechanically from naive stage-based multipliers applied to a single self-reported quality score.
 
