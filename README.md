@@ -33,11 +33,19 @@ The LLM can spawn “branches” off a particular thought to explore different l
 
 The server maintains a "short-term" memory buffer of the LLM's ten most recent thoughts, and a "long-term" memory of thoughts that can be retrieved based on their tags for summarization of the entire history of the LLM's thinking process on a given topic.
 
-### Limitations
+## Limitations
+
+### Naive Matacognitive Monitoring
 
 Currently, the quality metrics and metacognitive feedback are derived mechanically from naive stage-based multipliers applied to a single self-reported quality score.
 
 As part of the future work, I plan to add more sophisticated metacognitive feedback, including semantic analysis of thought content, thought verification processes, and more intelligent monitoring for reasoning errors.
+
+### Lack of User Interface
+
+Currently, the server stores all thoughts in memory, and does not persist them to a file or database. There is also no user interface for reviewing the thought space or visualizing the mind map.
+
+As part of the future work, I plan to incorporate a simple visualization client so the user can watch the thought graph evolve.
 
 ## MCP Tools
 
